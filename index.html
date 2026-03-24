@@ -366,6 +366,7 @@
       <input type="url" id="newUrl" placeholder="https://example.com">
       <label for="newCategory">Category</label>
       <select id="newCategory"></select>
+      <input type="text" id="newCategoryInput" placeholder="Enter new category name" style="display:none">
       <label for="newDescription">Description</label>
       <textarea id="newDescription" placeholder="Brief description of the tool."></textarea>
       <div class="modal-actions">
@@ -638,6 +639,7 @@
     const newDescription = document.getElementById("newDescription");
 
     let editingIndex = null;
+    const newCategoryInput = document.getElementById("newCategoryInput");
 
     function populateCategories(selected) {
       const cats = [...new Set(tools.map(t => t.category))].sort((a, b) => {
@@ -647,8 +649,20 @@
       });
       newCategory.innerHTML = cats.map(c =>
         `<option value="${c}"${c === selected ? " selected" : ""}>${c}</option>`
-      ).join("");
+      ).join("") + `<option value="__new__">+ New category...</option>`;
+      newCategoryInput.style.display = "none";
+      newCategoryInput.value = "";
     }
+
+    newCategory.addEventListener("change", () => {
+      if (newCategory.value === "__new__") {
+        newCategoryInput.style.display = "";
+        newCategoryInput.focus();
+      } else {
+        newCategoryInput.style.display = "none";
+        newCategoryInput.value = "";
+      }
+    });
 
     function openModal(index) {
       editingIndex = index !== undefined ? index : null;
@@ -696,8 +710,17 @@
     btnSave.addEventListener("click", () => {
       const name = newName.value.trim();
       const url = newUrl.value.trim();
-      const category = newCategory.value;
       const description = newDescription.value.trim();
+
+      let category = newCategory.value;
+      if (category === "__new__") {
+        category = newCategoryInput.value.trim();
+        if (!category) {
+          newCategoryInput.style.borderColor = "#f85149";
+          return;
+        }
+        newCategoryInput.style.borderColor = "";
+      }
 
       if (!name || !url) {
         newName.style.borderColor = name ? "" : "#f85149";
