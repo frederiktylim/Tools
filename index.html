@@ -169,6 +169,7 @@
     .cat-ai          { background: #2a2a1a; color: #d2a8ff; }
     .cat-devtools    { background: #3a2a1a; color: #f0883e; }
     .cat-design      { background: #3a3a1a; color: #e3b341; }
+    .cat-placeholder { background: #2a2a2a; color: #8b949e; }
 
     @media (max-width: 600px) {
       body { padding: 1rem; }
@@ -226,6 +227,33 @@
 
       // Design
       { name: "Stitch by Google", url: "https://stitch.withgoogle.com", category: "Design", description: "Build site design, UI/UX from code." },
+
+      // ── Placeholder Apps for Review ──
+      { name: "Burp Suite", url: "https://portswigger.net/burp", category: "Placeholder Apps for Review", description: "Web vulnerability scanner and proxy for penetration testing." },
+      { name: "Nessus", url: "https://www.tenable.com/products/nessus", category: "Placeholder Apps for Review", description: "Comprehensive vulnerability assessment scanner." },
+      { name: "1Password", url: "https://1password.com", category: "Placeholder Apps for Review", description: "Team password manager with secret sharing and audit logs." },
+      { name: "CrowdStrike", url: "https://www.crowdstrike.com", category: "Placeholder Apps for Review", description: "Endpoint detection and response platform." },
+      { name: "Netlify", url: "https://www.netlify.com", category: "Placeholder Apps for Review", description: "Build, deploy, and scale modern web projects." },
+      { name: "AWS", url: "https://aws.amazon.com", category: "Placeholder Apps for Review", description: "Full-spectrum cloud computing services by Amazon." },
+      { name: "DigitalOcean", url: "https://www.digitalocean.com", category: "Placeholder Apps for Review", description: "Simple cloud infrastructure for developers." },
+      { name: "Notion", url: "https://www.notion.so", category: "Placeholder Apps for Review", description: "All-in-one workspace for notes, docs, and project management." },
+      { name: "Slack", url: "https://slack.com", category: "Placeholder Apps for Review", description: "Team messaging and collaboration hub." },
+      { name: "Figma", url: "https://www.figma.com", category: "Placeholder Apps for Review", description: "Collaborative interface design tool in the browser." },
+      { name: "Linear", url: "https://linear.app", category: "Placeholder Apps for Review", description: "Streamlined issue tracking for software teams." },
+      { name: "GitHub Actions", url: "https://github.com/features/actions", category: "Placeholder Apps for Review", description: "CI/CD workflows built into GitHub repositories." },
+      { name: "Docker", url: "https://www.docker.com", category: "Placeholder Apps for Review", description: "Containerization platform for building and shipping apps." },
+      { name: "Terraform", url: "https://www.terraform.io", category: "Placeholder Apps for Review", description: "Infrastructure as code for provisioning cloud resources." },
+      { name: "Ansible", url: "https://www.ansible.com", category: "Placeholder Apps for Review", description: "Agentless automation for configuration management." },
+      { name: "Datadog", url: "https://www.datadoghq.com", category: "Placeholder Apps for Review", description: "Cloud-scale monitoring and observability platform." },
+      { name: "Grafana", url: "https://grafana.com", category: "Placeholder Apps for Review", description: "Open-source dashboards for metrics and logs visualization." },
+      { name: "PagerDuty", url: "https://www.pagerduty.com", category: "Placeholder Apps for Review", description: "Incident response and on-call management." },
+      { name: "PostgreSQL", url: "https://www.postgresql.org", category: "Placeholder Apps for Review", description: "Powerful open-source relational database system." },
+      { name: "Redis", url: "https://redis.io", category: "Placeholder Apps for Review", description: "In-memory data store for caching and real-time apps." },
+      { name: "Hugging Face", url: "https://huggingface.co", category: "Placeholder Apps for Review", description: "Open-source ML model hub and collaboration platform." },
+      { name: "Replicate", url: "https://replicate.com", category: "Placeholder Apps for Review", description: "Run open-source ML models via a simple API." },
+      { name: "Coolors", url: "https://coolors.co", category: "Placeholder Apps for Review", description: "Fast color palette generator for designers." },
+      { name: "Font Awesome", url: "https://fontawesome.com", category: "Placeholder Apps for Review", description: "Icon library and toolkit for web projects." },
+      { name: "Unsplash", url: "https://unsplash.com", category: "Placeholder Apps for Review", description: "Free high-resolution photos for any project." },
     ];
 
     // ── Category color map ──
@@ -236,6 +264,7 @@
       AI: "cat-ai",
       "Dev Tools": "cat-devtools",
       Design: "cat-design",
+      "Placeholder Apps for Review": "cat-placeholder",
     };
 
     // ── Rendering ──
@@ -260,8 +289,12 @@
         categories[t.category].push(t);
       });
 
-      // Sort categories alphabetically, sort tools within each category
-      const sortedKeys = Object.keys(categories).sort();
+      // Sort categories alphabetically, but keep "Placeholder Apps for Review" last
+      const sortedKeys = Object.keys(categories).sort((a, b) => {
+        if (a === "Placeholder Apps for Review") return 1;
+        if (b === "Placeholder Apps for Review") return -1;
+        return a.localeCompare(b);
+      });
       let html = "";
       sortedKeys.forEach(cat => {
         categories[cat].sort((a, b) => a.name.localeCompare(b.name));
