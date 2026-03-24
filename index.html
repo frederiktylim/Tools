@@ -195,6 +195,122 @@
     .cat-design      { background: #3a3a1a; color: #e3b341; }
     .cat-placeholder { background: #2a2a2a; color: #8b949e; }
 
+    /* New button */
+    .btn-new {
+      background: #238636;
+      color: #fff;
+      border: 1px solid #2ea043;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-new:hover {
+      background: #2ea043;
+    }
+
+    /* Modal overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 480px;
+      margin: 1rem;
+    }
+
+    .modal h2 {
+      font-size: 1.25rem;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin-bottom: 0.25rem;
+    }
+
+    .modal input,
+    .modal select,
+    .modal textarea {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.75rem;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e1e4e8;
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+
+    .modal input:focus,
+    .modal select:focus,
+    .modal textarea:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .modal textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .modal-actions button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #30363d;
+    }
+
+    .btn-cancel {
+      background: #21262d;
+      color: #e1e4e8;
+    }
+
+    .btn-cancel:hover {
+      background: #30363d;
+    }
+
+    .btn-save {
+      background: #238636;
+      color: #fff;
+      border-color: #2ea043;
+    }
+
+    .btn-save:hover {
+      background: #2ea043;
+    }
+
     @media (max-width: 600px) {
       body { padding: 1rem; }
       header { flex-direction: column; align-items: flex-start; }
@@ -211,10 +327,29 @@
         <span class="slider"></span>
       </label>
       <span id="label-alpha">A &ndash; Z</span>
+      <button class="btn-new" id="btnNew">+ New</button>
     </div>
   </header>
 
   <div id="content"></div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h2>Add New Tool</h2>
+      <label for="newName">Name</label>
+      <input type="text" id="newName" placeholder="e.g. My Tool">
+      <label for="newUrl">URL</label>
+      <input type="url" id="newUrl" placeholder="https://example.com">
+      <label for="newCategory">Category</label>
+      <select id="newCategory"></select>
+      <label for="newDescription">Description</label>
+      <textarea id="newDescription" placeholder="Brief description of the tool."></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="btnCancel">Cancel</button>
+        <button class="btn-save" id="btnSave">Add Tool</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // ── Default Tool Data ──
@@ -463,6 +598,67 @@
       saveTools();
       render();
     }
+
+    // ── New Tool Modal ──
+    const modalOverlay = document.getElementById("modalOverlay");
+    const btnNew = document.getElementById("btnNew");
+    const btnCancel = document.getElementById("btnCancel");
+    const btnSave = document.getElementById("btnSave");
+    const newName = document.getElementById("newName");
+    const newUrl = document.getElementById("newUrl");
+    const newCategory = document.getElementById("newCategory");
+    const newDescription = document.getElementById("newDescription");
+
+    function populateCategories() {
+      const cats = [...new Set(tools.map(t => t.category))].sort((a, b) => {
+        if (a === "Placeholder Apps for Review") return 1;
+        if (b === "Placeholder Apps for Review") return -1;
+        return a.localeCompare(b);
+      });
+      newCategory.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join("");
+    }
+
+    function openModal() {
+      newName.value = "";
+      newUrl.value = "";
+      newDescription.value = "";
+      populateCategories();
+      modalOverlay.classList.add("open");
+      newName.focus();
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove("open");
+    }
+
+    btnNew.addEventListener("click", openModal);
+    btnCancel.addEventListener("click", closeModal);
+    modalOverlay.addEventListener("click", (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    btnSave.addEventListener("click", () => {
+      const name = newName.value.trim();
+      const url = newUrl.value.trim();
+      const category = newCategory.value;
+      const description = newDescription.value.trim();
+
+      if (!name || !url) {
+        newName.style.borderColor = name ? "" : "#f85149";
+        newUrl.style.borderColor = url ? "" : "#f85149";
+        return;
+      }
+
+      // Add a catClass entry if the category is new
+      if (!catClass[category]) {
+        catClass[category] = "cat-placeholder";
+      }
+
+      tools.push({ name, url, category, description });
+      saveTools();
+      closeModal();
+      render();
+    });
 
     // Default: category view
     render();
