@@ -180,10 +180,34 @@
       width: fit-content;
     }
 
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
     .card-description {
       font-size: 0.85rem;
       color: #8b949e;
       line-height: 1.5;
+    }
+
+    .btn-edit {
+      background: none;
+      border: none;
+      color: #484f58;
+      cursor: pointer;
+      padding: 0.2rem;
+      font-size: 0.8rem;
+      line-height: 1;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-edit:hover {
+      color: #58a6ff;
+      background: rgba(88, 166, 255, 0.1);
     }
 
     /* Category badge colors */
@@ -335,7 +359,7 @@
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
-      <h2>Add New Tool</h2>
+      <h2 id="modalTitle">Add New Tool</h2>
       <label for="newName">Name</label>
       <input type="text" id="newName" placeholder="e.g. My Tool">
       <label for="newUrl">URL</label>
@@ -452,7 +476,10 @@
     function createCard(tool, index) {
       return `
         <div class="card" draggable="true" data-index="${index}">
-          <span class="card-category ${catClass[tool.category] || ''}">${tool.category}</span>
+          <div class="card-header">
+            <span class="card-category ${catClass[tool.category] || ''}">${tool.category}</span>
+            <button class="btn-edit" data-index="${index}" title="Edit">&#9998;</button>
+          </div>
           <div class="card-title"><a href="${tool.url}" target="_blank" rel="noopener" draggable="false">${tool.name}</a></div>
           <div class="card-description">${tool.description}</div>
         </div>`;
@@ -599,8 +626,9 @@
       render();
     }
 
-    // ── New Tool Modal ──
+    // ── Tool Modal (Add / Edit) ──
     const modalOverlay = document.getElementById("modalOverlay");
+    const modalTitle = document.getElementById("modalTitle");
     const btnNew = document.getElementById("btnNew");
     const btnCancel = document.getElementById("btnCancel");
     const btnSave = document.getElementById("btnSave");
@@ -609,32 +637,60 @@
     const newCategory = document.getElementById("newCategory");
     const newDescription = document.getElementById("newDescription");
 
-    function populateCategories() {
+    let editingIndex = null;
+
+    function populateCategories(selected) {
       const cats = [...new Set(tools.map(t => t.category))].sort((a, b) => {
         if (a === "Placeholder Apps for Review") return 1;
         if (b === "Placeholder Apps for Review") return -1;
         return a.localeCompare(b);
       });
-      newCategory.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join("");
+      newCategory.innerHTML = cats.map(c =>
+        `<option value="${c}"${c === selected ? " selected" : ""}>${c}</option>`
+      ).join("");
     }
 
-    function openModal() {
-      newName.value = "";
-      newUrl.value = "";
-      newDescription.value = "";
-      populateCategories();
+    function openModal(index) {
+      editingIndex = index !== undefined ? index : null;
+      if (editingIndex !== null) {
+        const tool = tools[editingIndex];
+        modalTitle.textContent = "Edit Tool";
+        btnSave.textContent = "Save Changes";
+        newName.value = tool.name;
+        newUrl.value = tool.url;
+        newDescription.value = tool.description;
+        populateCategories(tool.category);
+      } else {
+        modalTitle.textContent = "Add New Tool";
+        btnSave.textContent = "Add Tool";
+        newName.value = "";
+        newUrl.value = "";
+        newDescription.value = "";
+        populateCategories();
+      }
+      newName.style.borderColor = "";
+      newUrl.style.borderColor = "";
       modalOverlay.classList.add("open");
       newName.focus();
     }
 
     function closeModal() {
       modalOverlay.classList.remove("open");
+      editingIndex = null;
     }
 
-    btnNew.addEventListener("click", openModal);
+    btnNew.addEventListener("click", () => openModal());
     btnCancel.addEventListener("click", closeModal);
     modalOverlay.addEventListener("click", (e) => {
       if (e.target === modalOverlay) closeModal();
+    });
+
+    content.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-edit");
+      if (btn) {
+        e.preventDefault();
+        openModal(parseInt(btn.dataset.index));
+      }
     });
 
     btnSave.addEventListener("click", () => {
@@ -649,12 +705,16 @@
         return;
       }
 
-      // Add a catClass entry if the category is new
       if (!catClass[category]) {
         catClass[category] = "cat-placeholder";
       }
 
-      tools.push({ name, url, category, description });
+      if (editingIndex !== null) {
+        tools[editingIndex] = { name, url, category, description };
+      } else {
+        tools.push({ name, url, category, description });
+      }
+
       saveTools();
       closeModal();
       render();
