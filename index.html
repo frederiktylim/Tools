@@ -112,6 +112,16 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1rem;
+      min-height: 40px;
+      padding: 4px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    .card-grid.drag-over {
+      background: rgba(88, 166, 255, 0.05);
+      outline: 2px dashed rgba(88, 166, 255, 0.3);
+      outline-offset: 4px;
     }
 
     .card {
@@ -119,15 +129,29 @@
       border: 1px solid #21262d;
       border-radius: 10px;
       padding: 1.25rem;
-      transition: border-color 0.2s, transform 0.15s;
+      transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      cursor: grab;
     }
+
+    .card:active { cursor: grabbing; }
 
     .card:hover {
       border-color: #58a6ff;
       transform: translateY(-2px);
+    }
+
+    .card.dragging {
+      opacity: 0.3;
+      transform: scale(0.95);
+    }
+
+    .card.drag-placeholder {
+      border: 2px dashed #58a6ff;
+      background: rgba(88, 166, 255, 0.08);
+      min-height: 100px;
     }
 
     .card-title {
@@ -193,8 +217,8 @@
   <div id="content"></div>
 
   <script>
-    // ── Tool Data ──
-    const tools = [
+    // ── Default Tool Data ──
+    const defaultTools = [
       // Hosting
       { name: "Namecheap", url: "https://www.namecheap.com", category: "Hosting", description: "Domain registration and management." },
       { name: "Railway", url: "https://www.railway.ai", category: "Hosting", description: "Deploy apps and databases to the cloud instantly." },
@@ -256,6 +280,21 @@
       { name: "Unsplash", url: "https://unsplash.com", category: "Placeholder Apps for Review", description: "Free high-resolution photos for any project." },
     ];
 
+    // ── Load tools from localStorage or use defaults ──
+    let tools = loadTools();
+
+    function loadTools() {
+      try {
+        const saved = localStorage.getItem("toolbox_order");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+      return defaultTools.map(t => ({ ...t }));
+    }
+
+    function saveTools() {
+      localStorage.setItem("toolbox_order", JSON.stringify(tools));
+    }
+
     // ── Category color map ──
     const catClass = {
       Hosting: "cat-hosting",
@@ -273,42 +312,50 @@
     const labelCat = document.getElementById("label-category");
     const labelAlpha = document.getElementById("label-alpha");
 
-    function createCard(tool) {
+    let draggedIndex = null;
+
+    function createCard(tool, index) {
       return `
-        <div class="card">
+        <div class="card" draggable="true" data-index="${index}">
           <span class="card-category ${catClass[tool.category] || ''}">${tool.category}</span>
-          <div class="card-title"><a href="${tool.url}" target="_blank" rel="noopener">${tool.name}</a></div>
+          <div class="card-title"><a href="${tool.url}" target="_blank" rel="noopener" draggable="false">${tool.name}</a></div>
           <div class="card-description">${tool.description}</div>
         </div>`;
     }
 
-    function renderCategoryView() {
+    function getToolsByCategory() {
       const categories = {};
-      tools.forEach(t => {
+      tools.forEach((t, i) => {
         if (!categories[t.category]) categories[t.category] = [];
-        categories[t.category].push(t);
+        categories[t.category].push({ tool: t, index: i });
       });
+      return categories;
+    }
 
-      // Sort categories alphabetically, but keep "Placeholder Apps for Review" last
+    function renderCategoryView() {
+      const categories = getToolsByCategory();
+
       const sortedKeys = Object.keys(categories).sort((a, b) => {
         if (a === "Placeholder Apps for Review") return 1;
         if (b === "Placeholder Apps for Review") return -1;
         return a.localeCompare(b);
       });
+
       let html = "";
       sortedKeys.forEach(cat => {
-        categories[cat].sort((a, b) => a.name.localeCompare(b.name));
         html += `<h2 class="category-heading">${cat}</h2>`;
-        html += `<div class="card-grid">`;
-        html += categories[cat].map(createCard).join("");
+        html += `<div class="card-grid" data-category="${cat}">`;
+        html += categories[cat].map(item => createCard(item.tool, item.index)).join("");
         html += `</div>`;
       });
       content.innerHTML = html;
+      attachDragListeners();
     }
 
     function renderAlphaView() {
-      const sorted = [...tools].sort((a, b) => a.name.localeCompare(b.name));
-      content.innerHTML = `<div class="card-grid">${sorted.map(createCard).join("")}</div>`;
+      const indexed = tools.map((t, i) => ({ tool: t, index: i }));
+      indexed.sort((a, b) => a.tool.name.localeCompare(b.tool.name));
+      content.innerHTML = `<div class="card-grid">${indexed.map(item => createCard(item.tool, item.index)).join("")}</div>`;
     }
 
     function render() {
@@ -323,6 +370,99 @@
     }
 
     toggle.addEventListener("change", render);
+
+    // ── Drag and Drop ──
+    function attachDragListeners() {
+      const cards = content.querySelectorAll(".card[draggable]");
+      const grids = content.querySelectorAll(".card-grid[data-category]");
+
+      cards.forEach(card => {
+        card.addEventListener("dragstart", onDragStart);
+        card.addEventListener("dragend", onDragEnd);
+      });
+
+      grids.forEach(grid => {
+        grid.addEventListener("dragover", onDragOver);
+        grid.addEventListener("dragleave", onDragLeave);
+        grid.addEventListener("drop", onDrop);
+      });
+    }
+
+    function onDragStart(e) {
+      draggedIndex = parseInt(e.currentTarget.dataset.index);
+      e.currentTarget.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", draggedIndex);
+    }
+
+    function onDragEnd(e) {
+      e.currentTarget.classList.remove("dragging");
+      content.querySelectorAll(".card-grid").forEach(g => g.classList.remove("drag-over"));
+      draggedIndex = null;
+    }
+
+    function onDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      e.currentTarget.classList.add("drag-over");
+    }
+
+    function onDragLeave(e) {
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        e.currentTarget.classList.remove("drag-over");
+      }
+    }
+
+    function onDrop(e) {
+      e.preventDefault();
+      const grid = e.currentTarget;
+      grid.classList.remove("drag-over");
+
+      if (draggedIndex === null) return;
+
+      const targetCategory = grid.dataset.category;
+      const draggedTool = tools[draggedIndex];
+
+      // Find insertion position based on mouse location
+      const cards = [...grid.querySelectorAll(".card:not(.dragging)")];
+      let insertBeforeIndex = null;
+
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const midX = rect.left + rect.width / 2;
+        if (e.clientY < midY || (e.clientY < rect.bottom && e.clientX < midX)) {
+          insertBeforeIndex = parseInt(card.dataset.index);
+          break;
+        }
+      }
+
+      // Remove the tool from its current position
+      const [removed] = tools.splice(draggedIndex, 1);
+      removed.category = targetCategory;
+
+      // Recalculate insert position after removal
+      if (insertBeforeIndex !== null) {
+        // Adjust index since we removed an element
+        let adjustedIndex = insertBeforeIndex;
+        if (draggedIndex < insertBeforeIndex) adjustedIndex--;
+        // Find where this tool now sits in the array
+        const targetTool = tools[adjustedIndex];
+        const newPos = targetTool ? tools.indexOf(targetTool) : tools.length;
+        tools.splice(newPos, 0, removed);
+      } else {
+        // Dropped at the end of the category — find last tool in this category
+        let lastCatIndex = -1;
+        tools.forEach((t, i) => {
+          if (t.category === targetCategory) lastCatIndex = i;
+        });
+        tools.splice(lastCatIndex + 1, 0, removed);
+      }
+
+      // Update badge color class
+      saveTools();
+      render();
+    }
 
     // Default: category view
     render();
