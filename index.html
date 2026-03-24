@@ -499,6 +499,8 @@
       const categories = getToolsByCategory();
 
       const sortedKeys = Object.keys(categories).sort((a, b) => {
+        if (a === "Project") return -1;
+        if (b === "Project") return 1;
         if (a === "Placeholder Apps for Review") return 1;
         if (b === "Placeholder Apps for Review") return -1;
         return a.localeCompare(b);
@@ -506,9 +508,10 @@
 
       let html = "";
       sortedKeys.forEach(cat => {
+        const sorted = categories[cat].sort((a, b) => a.tool.name.localeCompare(b.tool.name));
         html += `<h2 class="category-heading">${cat}</h2>`;
         html += `<div class="card-grid" data-category="${cat}">`;
-        html += categories[cat].map(item => createCard(item.tool, item.index)).join("");
+        html += sorted.map(item => createCard(item.tool, item.index)).join("");
         html += `</div>`;
       });
       content.innerHTML = html;
