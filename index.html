@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tools &amp; Resources</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117;
+      color: #e1e4e8;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Toggle switch */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: #8b949e;
+    }
+
+    .toggle-wrap span {
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .toggle-wrap span.active {
+      color: #58a6ff;
+      font-weight: 600;
+    }
+
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input { display: none; }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #30363d;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #e1e4e8;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .switch input:checked + .slider {
+      background: #58a6ff;
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(20px);
+    }
+
+    /* Content area */
+    #content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Category heading */
+    .category-heading {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #58a6ff;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .category-heading:first-child {
+      margin-top: 0;
+    }
+
+    /* Card grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 1.25rem;
+      transition: border-color 0.2s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .card:hover {
+      border-color: #58a6ff;
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .card-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .card-title a:hover {
+      text-decoration: underline;
+    }
+
+    .card-category {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      width: fit-content;
+    }
+
+    .card-description {
+      font-size: 0.85rem;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+
+    /* Category badge colors */
+    .cat-security    { background: #1a3a2a; color: #3fb950; }
+    .cat-hosting     { background: #1a2a3a; color: #58a6ff; }
+    .cat-app         { background: #2a1a3a; color: #bc8cff; }
+    .cat-devops      { background: #3a2a1a; color: #f0883e; }
+    .cat-monitoring   { background: #3a1a2a; color: #f778ba; }
+    .cat-database    { background: #1a3a3a; color: #56d4dd; }
+    .cat-ai          { background: #2a2a1a; color: #d2a8ff; }
+    .cat-design      { background: #3a3a1a; color: #e3b341; }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tools &amp; Resources</h1>
+    <div class="toggle-wrap">
+      <span id="label-category" class="active">Category</span>
+      <label class="switch">
+        <input type="checkbox" id="viewToggle">
+        <span class="slider"></span>
+      </label>
+      <span id="label-alpha">A &ndash; Z</span>
+    </div>
+  </header>
+
+  <div id="content"></div>
+
+  <script>
+    // ── Tool Data ──
+    const tools = [
+      // Security
+      { name: "Burp Suite", url: "https://portswigger.net/burp", category: "Security", description: "Web vulnerability scanner and proxy for penetration testing." },
+      { name: "Nessus", url: "https://www.tenable.com/products/nessus", category: "Security", description: "Comprehensive vulnerability assessment scanner." },
+      { name: "1Password", url: "https://1password.com", category: "Security", description: "Team password manager with secret sharing and audit logs." },
+      { name: "CrowdStrike", url: "https://www.crowdstrike.com", category: "Security", description: "Endpoint detection and response platform." },
+
+      // Hosting
+      { name: "Vercel", url: "https://vercel.com", category: "Hosting", description: "Frontend cloud platform for deploying web apps instantly." },
+      { name: "Netlify", url: "https://www.netlify.com", category: "Hosting", description: "Build, deploy, and scale modern web projects." },
+      { name: "AWS", url: "https://aws.amazon.com", category: "Hosting", description: "Full-spectrum cloud computing services by Amazon." },
+      { name: "DigitalOcean", url: "https://www.digitalocean.com", category: "Hosting", description: "Simple cloud infrastructure for developers." },
+
+      // App
+      { name: "Notion", url: "https://www.notion.so", category: "App", description: "All-in-one workspace for notes, docs, and project management." },
+      { name: "Slack", url: "https://slack.com", category: "App", description: "Team messaging and collaboration hub." },
+      { name: "Figma", url: "https://www.figma.com", category: "App", description: "Collaborative interface design tool in the browser." },
+      { name: "Linear", url: "https://linear.app", category: "App", description: "Streamlined issue tracking for software teams." },
+
+      // DevOps
+      { name: "GitHub Actions", url: "https://github.com/features/actions", category: "DevOps", description: "CI/CD workflows built into GitHub repositories." },
+      { name: "Docker", url: "https://www.docker.com", category: "DevOps", description: "Containerization platform for building and shipping apps." },
+      { name: "Terraform", url: "https://www.terraform.io", category: "DevOps", description: "Infrastructure as code for provisioning cloud resources." },
+      { name: "Ansible", url: "https://www.ansible.com", category: "DevOps", description: "Agentless automation for configuration management." },
+
+      // Monitoring
+      { name: "Datadog", url: "https://www.datadoghq.com", category: "Monitoring", description: "Cloud-scale monitoring and observability platform." },
+      { name: "Grafana", url: "https://grafana.com", category: "Monitoring", description: "Open-source dashboards for metrics and logs visualization." },
+      { name: "PagerDuty", url: "https://www.pagerduty.com", category: "Monitoring", description: "Incident response and on-call management." },
+
+      // Database
+      { name: "PostgreSQL", url: "https://www.postgresql.org", category: "Database", description: "Powerful open-source relational database system." },
+      { name: "Redis", url: "https://redis.io", category: "Database", description: "In-memory data store for caching and real-time apps." },
+      { name: "Supabase", url: "https://supabase.com", category: "Database", description: "Open-source Firebase alternative with Postgres backend." },
+
+      // AI
+      { name: "Claude", url: "https://claude.ai", category: "AI", description: "Anthropic's AI assistant for analysis, writing, and code." },
+      { name: "Hugging Face", url: "https://huggingface.co", category: "AI", description: "Open-source ML model hub and collaboration platform." },
+      { name: "Replicate", url: "https://replicate.com", category: "AI", description: "Run open-source ML models via a simple API." },
+
+      // Design
+      { name: "Coolors", url: "https://coolors.co", category: "Design", description: "Fast color palette generator for designers." },
+      { name: "Font Awesome", url: "https://fontawesome.com", category: "Design", description: "Icon library and toolkit for web projects." },
+      { name: "Unsplash", url: "https://unsplash.com", category: "Design", description: "Free high-resolution photos for any project." },
+    ];
+
+    // ── Category color map ──
+    const catClass = {
+      Security: "cat-security",
+      Hosting: "cat-hosting",
+      App: "cat-app",
+      DevOps: "cat-devops",
+      Monitoring: "cat-monitoring",
+      Database: "cat-database",
+      AI: "cat-ai",
+      Design: "cat-design",
+    };
+
+    // ── Rendering ──
+    const content = document.getElementById("content");
+    const toggle = document.getElementById("viewToggle");
+    const labelCat = document.getElementById("label-category");
+    const labelAlpha = document.getElementById("label-alpha");
+
+    function createCard(tool) {
+      return `
+        <div class="card">
+          <span class="card-category ${catClass[tool.category] || ''}">${tool.category}</span>
+          <div class="card-title"><a href="${tool.url}" target="_blank" rel="noopener">${tool.name}</a></div>
+          <div class="card-description">${tool.description}</div>
+        </div>`;
+    }
+
+    function renderCategoryView() {
+      const categories = {};
+      tools.forEach(t => {
+        if (!categories[t.category]) categories[t.category] = [];
+        categories[t.category].push(t);
+      });
+
+      // Sort categories alphabetically, sort tools within each category
+      const sortedKeys = Object.keys(categories).sort();
+      let html = "";
+      sortedKeys.forEach(cat => {
+        categories[cat].sort((a, b) => a.name.localeCompare(b.name));
+        html += `<h2 class="category-heading">${cat}</h2>`;
+        html += `<div class="card-grid">`;
+        html += categories[cat].map(createCard).join("");
+        html += `</div>`;
+      });
+      content.innerHTML = html;
+    }
+
+    function renderAlphaView() {
+      const sorted = [...tools].sort((a, b) => a.name.localeCompare(b.name));
+      content.innerHTML = `<div class="card-grid">${sorted.map(createCard).join("")}</div>`;
+    }
+
+    function render() {
+      const isAlpha = toggle.checked;
+      labelCat.classList.toggle("active", !isAlpha);
+      labelAlpha.classList.toggle("active", isAlpha);
+      if (isAlpha) {
+        renderAlphaView();
+      } else {
+        renderCategoryView();
+      }
+    }
+
+    toggle.addEventListener("change", render);
+
+    // Default: category view
+    render();
+  </script>
+</body>
+</html>
