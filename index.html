@@ -218,6 +218,93 @@
     .cat-devtools    { background: #3a2a1a; color: #f0883e; }
     .cat-design      { background: #3a3a1a; color: #e3b341; }
     .cat-placeholder { background: #2a2a2a; color: #8b949e; }
+    .cat-information { background: #1a2a2a; color: #39d353; }
+
+    /* Information card content */
+    .card-content-preview {
+      font-size: 0.8rem;
+      color: #8b949e;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+
+    .card.info-card {
+      cursor: pointer;
+    }
+
+    .card.info-card:hover .card-content-preview {
+      color: #b1bac4;
+    }
+
+    /* Detail overlay for viewing full information */
+    .detail-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .detail-overlay.open {
+      display: flex;
+    }
+
+    .detail-panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 640px;
+      max-height: 80vh;
+      margin: 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      gap: 1rem;
+    }
+
+    .detail-panel-header h2 {
+      font-size: 1.25rem;
+      color: #fff;
+      margin: 0;
+    }
+
+    .detail-panel-header .btn-close {
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .detail-panel-header .btn-close:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .detail-panel-body {
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 0.875rem;
+      color: #e1e4e8;
+      line-height: 1.7;
+    }
 
     /* New button */
     .btn-new {
@@ -360,19 +447,42 @@
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <h2 id="modalTitle">Add New Tool</h2>
+      <label for="newType">Type</label>
+      <select id="newType">
+        <option value="tool">Tool (link)</option>
+        <option value="info">Information (text)</option>
+      </select>
       <label for="newName">Name</label>
       <input type="text" id="newName" placeholder="e.g. My Tool">
-      <label for="newUrl">URL</label>
-      <input type="url" id="newUrl" placeholder="https://example.com">
+      <div id="urlField">
+        <label for="newUrl">URL</label>
+        <input type="url" id="newUrl" placeholder="https://example.com">
+      </div>
       <label for="newCategory">Category</label>
       <select id="newCategory"></select>
       <input type="text" id="newCategoryInput" placeholder="Enter new category name" style="display:none">
-      <label for="newDescription">Description</label>
-      <textarea id="newDescription" placeholder="Brief description of the tool."></textarea>
+      <div id="descriptionField">
+        <label for="newDescription">Description</label>
+        <textarea id="newDescription" placeholder="Brief description of the tool."></textarea>
+      </div>
+      <div id="contentField" style="display:none">
+        <label for="newContent">Content</label>
+        <textarea id="newContent" placeholder="Paste or type your information here..." style="min-height:160px"></textarea>
+      </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="btnCancel">Cancel</button>
         <button class="btn-save" id="btnSave">Add Tool</button>
       </div>
+    </div>
+  </div>
+
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-panel">
+      <div class="detail-panel-header">
+        <h2 id="detailTitle"></h2>
+        <button class="btn-close" id="detailClose">&times;</button>
+      </div>
+      <div class="detail-panel-body" id="detailBody"></div>
     </div>
   </div>
 
@@ -464,6 +574,7 @@
       "Dev Tools": "cat-devtools",
       Design: "cat-design",
       "Placeholder Apps for Review": "cat-placeholder",
+      Information: "cat-information",
     };
 
     // ── Rendering ──
@@ -474,15 +585,26 @@
 
     let draggedIndex = null;
 
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     function createCard(tool, index) {
+      const isInfo = tool.type === "info";
       return `
-        <div class="card" draggable="true" data-index="${index}">
+        <div class="card${isInfo ? ' info-card' : ''}" draggable="true" data-index="${index}"${isInfo ? ' data-info="true"' : ''}>
           <div class="card-header">
             <span class="card-category ${catClass[tool.category] || ''}">${tool.category}</span>
             <button class="btn-edit" data-index="${index}" title="Edit">&#9998;</button>
           </div>
-          <div class="card-title"><a href="${tool.url}" target="_blank" rel="noopener" draggable="false">${tool.name}</a></div>
-          <div class="card-description">${tool.description}</div>
+          <div class="card-title">${isInfo
+            ? escapeHtml(tool.name)
+            : `<a href="${tool.url}" target="_blank" rel="noopener" draggable="false">${escapeHtml(tool.name)}</a>`
+          }</div>
+          ${isInfo
+            ? `<div class="card-content-preview">${escapeHtml(tool.content || '')}</div>`
+            : `<div class="card-description">${escapeHtml(tool.description)}</div>`
+          }
         </div>`;
     }
 
@@ -636,13 +758,33 @@
     const btnNew = document.getElementById("btnNew");
     const btnCancel = document.getElementById("btnCancel");
     const btnSave = document.getElementById("btnSave");
+    const newType = document.getElementById("newType");
     const newName = document.getElementById("newName");
     const newUrl = document.getElementById("newUrl");
+    const urlField = document.getElementById("urlField");
     const newCategory = document.getElementById("newCategory");
     const newDescription = document.getElementById("newDescription");
+    const descriptionField = document.getElementById("descriptionField");
+    const newContent = document.getElementById("newContent");
+    const contentField = document.getElementById("contentField");
 
     let editingIndex = null;
     const newCategoryInput = document.getElementById("newCategoryInput");
+
+    // Detail overlay elements
+    const detailOverlay = document.getElementById("detailOverlay");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailBody = document.getElementById("detailBody");
+    const detailClose = document.getElementById("detailClose");
+
+    function toggleModalType() {
+      const isInfo = newType.value === "info";
+      urlField.style.display = isInfo ? "none" : "";
+      descriptionField.style.display = isInfo ? "none" : "";
+      contentField.style.display = isInfo ? "" : "none";
+    }
+
+    newType.addEventListener("change", toggleModalType);
 
     function populateCategories(selected) {
       const cats = [...new Set(tools.map(t => t.category))].sort((a, b) => {
@@ -671,20 +813,25 @@
       editingIndex = index !== undefined ? index : null;
       if (editingIndex !== null) {
         const tool = tools[editingIndex];
-        modalTitle.textContent = "Edit Tool";
+        modalTitle.textContent = tool.type === "info" ? "Edit Information" : "Edit Tool";
         btnSave.textContent = "Save Changes";
+        newType.value = tool.type || "tool";
         newName.value = tool.name;
-        newUrl.value = tool.url;
-        newDescription.value = tool.description;
+        newUrl.value = tool.url || "";
+        newDescription.value = tool.description || "";
+        newContent.value = tool.content || "";
         populateCategories(tool.category);
       } else {
-        modalTitle.textContent = "Add New Tool";
-        btnSave.textContent = "Add Tool";
+        modalTitle.textContent = "Add New Entry";
+        btnSave.textContent = "Add Entry";
+        newType.value = "tool";
         newName.value = "";
         newUrl.value = "";
         newDescription.value = "";
+        newContent.value = "";
         populateCategories();
       }
+      toggleModalType();
       newName.style.borderColor = "";
       newUrl.style.borderColor = "";
       modalOverlay.classList.add("open");
@@ -706,14 +853,31 @@
       const btn = e.target.closest(".btn-edit");
       if (btn) {
         e.preventDefault();
+        e.stopPropagation();
         openModal(parseInt(btn.dataset.index));
+        return;
+      }
+
+      const infoCard = e.target.closest(".info-card");
+      if (infoCard) {
+        e.preventDefault();
+        const idx = parseInt(infoCard.dataset.index);
+        const tool = tools[idx];
+        detailTitle.textContent = tool.name;
+        detailBody.textContent = tool.content || "(No content)";
+        detailOverlay.classList.add("open");
       }
     });
 
+    detailClose.addEventListener("click", () => detailOverlay.classList.remove("open"));
+    detailOverlay.addEventListener("click", (e) => {
+      if (e.target === detailOverlay) detailOverlay.classList.remove("open");
+    });
+
     btnSave.addEventListener("click", () => {
+      const type = newType.value;
       const name = newName.value.trim();
-      const url = newUrl.value.trim();
-      const description = newDescription.value.trim();
+      const isInfo = type === "info";
 
       let category = newCategory.value;
       if (category === "__new__") {
@@ -725,20 +889,39 @@
         newCategoryInput.style.borderColor = "";
       }
 
-      if (!name || !url) {
-        newName.style.borderColor = name ? "" : "#f85149";
-        newUrl.style.borderColor = url ? "" : "#f85149";
-        return;
-      }
+      if (isInfo) {
+        const contentVal = newContent.value.trim();
+        if (!name) {
+          newName.style.borderColor = "#f85149";
+          return;
+        }
+        newName.style.borderColor = "";
 
-      if (!catClass[category]) {
-        catClass[category] = "cat-placeholder";
-      }
+        if (!catClass[category]) catClass[category] = "cat-placeholder";
 
-      if (editingIndex !== null) {
-        tools[editingIndex] = { name, url, category, description };
+        const entry = { name, type: "info", category, content: contentVal };
+        if (editingIndex !== null) {
+          tools[editingIndex] = entry;
+        } else {
+          tools.push(entry);
+        }
       } else {
-        tools.push({ name, url, category, description });
+        const url = newUrl.value.trim();
+        const description = newDescription.value.trim();
+        if (!name || !url) {
+          newName.style.borderColor = name ? "" : "#f85149";
+          newUrl.style.borderColor = url ? "" : "#f85149";
+          return;
+        }
+
+        if (!catClass[category]) catClass[category] = "cat-placeholder";
+
+        const entry = { name, url, category, description };
+        if (editingIndex !== null) {
+          tools[editingIndex] = entry;
+        } else {
+          tools.push(entry);
+        }
       }
 
       saveTools();
